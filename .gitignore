@@ -221,6 +221,21 @@ cython_debug/
 # Compiled Swift helper binaries (macOS WiFi sensing)
 v1/src/sensing/mac_wifi
 
+# Camera fall detection — large data files (외장하드/로컬)
+v1/data/models/*.pt
+v1/data/camera_sessions/
+v1/data/camera_dataset/aihub_fall_dataset.json
+v1/data/dataset/
+v1/data/training_sessions/
+v1/data/recordings/
+*.task
+yolov8n-pose.pt
+pose_landmarker_lite.task
+
+# macOS
+.DS_Store
+**/.DS_Store
+
 # Cursor
 #  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
 #  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data

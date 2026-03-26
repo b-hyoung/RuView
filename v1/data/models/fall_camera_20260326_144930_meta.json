@@ -1,0 +1,10 @@
+{
+  "labels": [
+    "fall",
+    "normal"
+  ],
+  "features": 34,
+  "window": 30,
+  "val_acc": 99.08,
+  "model_path": "v1/data/models/fall_camera_20260326_144930.pt"
+}
