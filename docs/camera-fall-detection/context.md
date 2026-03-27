@@ -16,71 +16,44 @@ WiFi CSI와 별개로 동작하는 독립 파이프라인.
 
 ---
 
-## 현재 상태 (2026-03-26)
+## 현재 상태 (2026-03-27)
 
 ### 최신 모델
-- 파일: `v1/data/models/fall_camera_20260326_144930.pt`
-- val 정확도: 99.1%
-- 학습 데이터: AI Hub fall 3321 윈도우 + 직접 촬영 normal 323 윈도우
+- `v1/data/models/` 안에 가장 최근 `fall_camera_YYYYMMDD_HHMMSS.pt` 사용
+- 학습 데이터:
+  - AI Hub fall (BY+FY+SY 전체) — 수만 개 윈도우
+  - AI Hub normal (N/N 전체) — 수만 개 윈도우
+  - 직접 촬영 normal 323 윈도우
+- Windows PC(RTX 5060Ti)에서 재학습 완료 → git push 됨
 
-### 문제점
-- **오감지 발생**: normal 데이터(323개)가 fall 데이터(3321개)에 비해 너무 적어서 서 있어도 fall로 판정하는 경우 있음
-- **해결 방법**: AI Hub N(정상) 데이터 추가 학습 필요
-- confidence 임계값 현재 0.90으로 올려놓음
+### 이전 문제점 (해결됨)
+- normal 데이터 323개 vs fall 수천 개 → 심각한 불균형으로 오감지 발생
+- AI Hub N 데이터 대규모 추가로 해결
+
+### 맥에서 테스트
+```bash
+git pull origin main
+ls v1/data/models/   # 가장 최근 .pt 파일 확인
+python3 v1/camera_inference.py --model v1/data/models/fall_camera_최신파일.pt --camera 0
+```
+- 카메라 인덱스 `--camera 0` 또는 `--camera 1` 테스트
+- confidence 임계값 현재 0.90
 
 ---
 
-## PC에서 이어하기 (Windows + RTX 5060Ti)
+## 추가 재학습이 필요한 경우 (Windows PC)
 
-### 1. 환경 세팅
+`run_all.bat` 실행하면 Fall 추출 → 학습 → git push 자동:
+```cmd
+run_all.bat
+```
+
+`extract_aihub_keypoints.py`는 `--mode` 인자로 동작:
 ```bash
-pip install ultralytics torch torchvision
-git clone https://github.com/b-hyoung/RuView
-cd RuView
+python v1/extract_aihub_keypoints.py --mode normal  # N 데이터
+python v1/extract_aihub_keypoints.py --mode fall    # Y 데이터 (BY+FY+SY)
 ```
-
-### 2. AI Hub N(정상) 데이터 받기
-- AI Hub → 041.낙상사고 위험동작 영상-센서 쌍 데이터
-- **TS.z01** (100GB, key: 531131) 다운로드 → 외장하드에 압축 해제
-- 압축 해제 후 `이미지/N/N/` 폴더 안에 JPG 이미지들 있어야 함
-
-### 3. N 데이터 키포인트 추출
-`v1/extract_aihub_keypoints.py` 상단 수정:
-```python
-IMAGE_ROOT = "D:/경로/이미지/N/N"   # Windows 경로로 수정
-OUTPUT     = "v1/data/camera_dataset/aihub_normal_dataset.json"
-```
-그리고 `main()` 안에서 label을 `"normal"`로 바꿔야 함:
-```python
-data = {"data": {"fall": [], "normal": fall_windows}}  # fall_windows → normal
-```
-실행:
-```bash
-python v1/extract_aihub_keypoints.py
-```
-
-### 4. AI Hub fall 데이터 추출 (외장하드 Y 폴더)
-```python
-IMAGE_ROOT = "D:/경로/이미지/Y"   # 또는 외장하드 경로
-OUTPUT     = "v1/data/camera_dataset/aihub_fall_dataset.json"
-```
-```bash
-python v1/extract_aihub_keypoints.py
-```
-
-### 5. 재학습
-```bash
-python v1/train_camera_model.py \
-  --dataset v1/data/camera_dataset/aihub_fall_dataset.json \
-  --dataset v1/data/camera_dataset/aihub_normal_dataset.json \
-  --dataset v1/data/camera_dataset/cam_session_20260326_103253_dataset.json
-```
-
-### 6. 실시간 추론
-```bash
-python v1/camera_inference.py --model v1/data/models/fall_camera_XXXXXXXX.pt --camera 0
-```
-카메라 인덱스는 `--camera 0` 또는 `--camera 1` (어떤 게 맞는지 테스트)
+데이터 경로: `D:/ai_nak/041.낙상사고.../TS/이미지/`
 
 ---
 
